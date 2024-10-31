@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+
+#usage: firefox_namespace [-n] basedir name profile_dir [default_dir]
+#    basedir should not be ~/.mozilla/firefox.  if possible it should be
+#        on an ssd.
+#  -n means new profile; will move profile to .old.n for some nunmber 
+#        will also make a _staged from the default_dir
+#        and will use the staged if it exists
+#   profile_dir and related are in source directory, not .mozilla/firefox
+#    firefox
+# 0.  ~/.mozilla/firefox should have profile_dir_auto fixed directory, 
+#            and a profiles.ini file.  Create if absent.
+#    chromium 
+# 0.  ~/.cache: new for each browser instance
+#     ~/.config: versioned, like different profiles in firefox
+#                  /chromium: config information
+#                  /pulse: audio config.  May need to expose actual data
+#     ~/.local: either new like .cache or keep with .config
+#     ~/.pki:   let it read the real file
+# 1. if -n: move profile_dir to numbered backup and purge backups
+# 2. An empty directory is created profile_dir_pid (unique file name)
+# 3. profiles.ini is created in profile_dir_pid ... profileini_file
+# 4. if profile_dir doesn't exist:
+#       if profile_dir_staged exists, move that to profile_dir
+#       else if default_dir exists, copy that to profile_dir, 
+#                  and background copy default_dir to profile_dir_staged
+#       else create empty profile_dir
+# 5. profileini_file overlays ~/.mozilla/firefox/profiles.ini
+#    profile_dir overlays ~/.mozilla/firefox/profile_dir_auto
+#
+
+import argparse
+import os
+import sys
+
+def main():
+   args = arguments()
+   if args.browser == 'firefox'
+      firefox_makefiles(args)
+   else:
+      chrome_based_makefiles(args)
+
+def number_backup():
+   pass
+
+def prep_profile_firefox():
+   pass
+
+def prep_profile_chrome():
+   pass
+
+def run_firefox():
+   pass
+
+def run_chrome():
+   pass
+
+def chrome_based_makefiles(args):
+   cachedir = os.path.expanduser("~/.cache")
+   if not os.path.isdir(cachedir):
+      os.mkdir(cachedir)
+   configdir = os.path.expanduser("~/.config")
+   if not os.path.isdir(configdir):
+      os.mkdir(configdir)
+   localdir = os.path.expanduser("~/.local")
+   if not os.path.isdir(localdir):
+      os.mkdir(localdir)
+
+def firefox_makefiles(args):
+   mozdir = os.path.expanduser("~/.mozilla")
+   if not os.path.isdir(mozdir):
+      os.mkdir(mozdir)
+   ffprofiledir = os.path.join(mozdir, "firefox")
+   if not os.path.isdir(ffprofiledir):
+      os.mkdir(ffprofiledir)
+   inipath = os.path.join(ffprofiledir,"profiles.ini")
+   nsdir = os.path.join(ffprofiledir, "profile_dir_auto")
+   if not os.path.isfile(inipath):
+      with open(inipath, 'w') as fp:
+         pass
+   if not os.path.isdir(nsdir):
+      os.mkdir(nsdir)
+
+def arguments():
+   p = argparse.ArgumentParser()
+   p.add_argument('-n',help='new profile', action='store_true')
+   p.add_argument('browser',help='type of browser. firefox, brave, chrome, chromium')
+   p.add_argument('basedir',help='directory of source profiles')
+   p.add_argument('name',help='name of profile')
+   p.add_argument('profile_dir',help='profile subdirectory')
+   p.add_argument('default_dir',nargs='?', help='default profile')
+   args = p.parse_args()
+
+main()
+#mkdir /tmp/tmpdir
+#touch /tmp/tmpdir/profiles.ini
+#mkdir /tmp/tmpdir/name_profile
+#ehco > /tmp/tmpdir/name_profile
+#ehco >> /tmp/tmpdir/name_profile
+#ehco >> /tmp/tmpdir/name_profile
+#ehco >> /tmp/tmpdir/name_profile
+#./nsmnt -m /tmp/tmpdir=/home/stew/.mozilla/firefox -m name_profileini=/home/stew/.mozilla/firefox/profiles.ini -m name_profile=/home/stew/.mozilla/firefox/name_profile bash
+
