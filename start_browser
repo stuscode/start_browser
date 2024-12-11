@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 
-#usage: firefox_namespace [-n] basedir name profile_dir [default_dir]
+#usage: start_browser [-r] browser basedir name profile_dir [default_dir]
 #    basedir should not be ~/.mozilla/firefox.  if possible it should be
 #        on an ssd.
-#  -n means new profile; will move profile to .old.n for some nunmber 
+#  -r means new profile; will move profile to .old.n for some nunmber 
 #        will also make a _staged from the default_dir
 #        and will use the staged if it exists
+#   NEW
+#   profile directory for firefox _is_ ~/.mozilla/firefox
+#      which means that it can be empty or not, don't manage the .ini file.
+#      mainly because starting the new firefox it ignores the .ini file
+#      if the profile directory it points to is empty.
+#   NEW
 #   profile_dir and related are in source directory, not .mozilla/firefox
 #    firefox
 # 0.  ~/.mozilla/firefox should have profile_dir_auto fixed directory, 
@@ -17,7 +23,7 @@
 #                  /pulse: audio config.  May need to expose actual data
 #     ~/.local: either new like .cache or keep with .config
 #     ~/.pki:   let it read the real file
-# 1. if -n: move profile_dir to numbered backup and purge backups
+# 1. if -r: move profile_dir to numbered backup and purge backups
 # 2. An empty directory is created profile_dir_pid (unique file name)
 # 3. profiles.ini is created in profile_dir_pid ... profileini_file
 # 4. if profile_dir doesn't exist:
@@ -31,40 +37,171 @@
 
 import argparse
 import os
+import re
+import shutil
 import sys
 
 def main():
    args = arguments()
-   if args.browser == 'firefox'
-      firefox_makefiles(args)
+
+#make sure that basedir exists
+   if not os.path.isdir(args.basedir):
+      print("bsaedir doesn't seem to exist")
+      exit(1)
+#TODO: other checking on basedir for writability
+   srcprofile_dir = os.path.join(args.basedir, args.name)
+   defaultpath = os.path.join(args.basedir,"default")
+   if args.r:
+      backupdir = os.path.join(args.basedir, "backup")
+      if not os.path.isdir(backupdir):
+         os.mkdir(backupdir)
+      chain_move(backupdir, args.name) #renumber backups to prepare for new
+      newbak = make_bakname(args.name, 1)  #name of new backup dir
+      srcfullnewbak = os.path.join(backupdir, newbak)
+      shutil.move(srcprofile_dir, srcfullnewbak)   #move to backup location
+              #if staged exists, use it, and spawn child to make new staged
+      srcstagedname = srcprofile_dir + "_staged_"
+      if os.path.isdir(srcstagedname):
+         shutil.move(srcstagedname, srcprofile_dir)
+      #end of -r processing
+      #profile dir will be ready if there was a staged
+      #make a new staged directory
+      fork_copy_path(defaultpath, srcstagedname)
+#set up directory that will be the profile
+   if not os.path.isdir(srcprofile_dir):
+      if os.path.isdir(defaultpath):
+         shutil.copytree(defaultpath, srcprofile_dir)
+      else:
+         os.mkdir(srcprofile_dir)
+
+      #set source to be final_profile_dir
+   srcfinal_profile_dir = srcprofile_dir
+
+#set up destination directory for mounts
+   if args.browser == 'firefox':
+      dstconfigdir,dstinifile = firefox_makefiles(args)
+       #create a profiles.ini for this browser instance
+      uniqname = "profile_dir_" + str(os.getpid())
+      tmpdir = os.path.join(args.basedir, uniqname)
+      os.mkdir(tmpdir)
+      srcprofilefile = os.path.join(tmpdir, 'profiles.ini')
+#TODO: error handling
+      try:
+         print("writing to: ",srcprofilefile)
+         p = open(srcprofilefile,'w')
+         p.write("[InstallAAA]\n")
+         p.write("Default=profile_dir_auto\n")
+         p.write("Locked=1\n\n")
+         p.write("[General]\n")
+         p.write("StartWithLastProfile=1\n\n")
+         p.write("[Profile0]\n")
+         p.write("Name="+args.name+'\n')
+         p.write("IsRelative=1\n")
+         p.write("Default=1\n")
+         p.write("Path=profile_dir_auto\n")
+         p.close()
+      except:
+         print("Couldn't create tmp profile: "+fname)
+         exit(1)
+
+#nsargs = set_args_firefox(srcfinal_profile_dir)
+   elif args.browser == 'brave':
+      dstconfigdir = brave_based_makefiles(args)
+#nsargs = set_args_brave(srcfinal_profile_dir)
+   elif args.browser == 'chrome':
+      dstconfigdir = chrome_based_makefiles(args)
+#nsargs = set_args_chrome(srcfinal_profile_dir)
+   elif args.browser == 'chromium':
+      dstconfigdir = chromium_based_makefiles(args)
+#nsargs = set_args_chromium(srcfinal_profile_dir)
    else:
-      chrome_based_makefiles(args)
+      print("Must specify a valid browser type")
+      exit(1)
 
-def number_backup():
-   pass
+#launch the browser in a new namespace
+   nsmnt_args = ['nsmnt']
+   nsmnt_args.append('-m')
+   confdirarg = srcfinal_profile_dir + '=' + dstconfigdir
+   nsmnt_args.append(confdirarg)
+   if args.browser == 'firefox':
+ #we have to create a srcfinal_ini_file in /tmp and properly populate it.
+      #srcfinal_ini_file = create_tmp_profile_file(args.name,dstconfigdir)
+      nsmnt_args.append('-m')
+      inifarg = srcprofilefile + '=' + dstinifile
+      nsmnt_args.append(inifarg)
+   nsmnt_args.append(args.browser)
+   #nsmnt_args.append('bash')
+   print("exec: ",nsmnt_args)
+   os.execvp(nsmnt_args[0],nsmnt_args)
 
-def prep_profile_firefox():
-   pass
+#create a different process to copy dirtree in the background
+def fork_copy_path(default, staged):
+      #only do this if there is already a default
+   if os.path.isdir(default):
+      newpid = os.fork()
+      if newpid < 0: 
+         print("error in fork")
+         exit(1)
+      elif newpid > 0:
+         return
+      shutil.copytree(default, staged)
 
-def prep_profile_chrome():
-   pass
+def create_tmp_profile_file(name,dstconfigdir):
+   file = "profile.ini_" + str(os.getpid())
+   fname = os.path.join("/tmp",file)
+   try:
+      f = open(fname,'w')
+      f.write("[Profile0]")
+      f.write("Name="+name)
+      f.write("IsRelative=1")
+      f.write("Path="+dstconfigdir)
+   except:
+      print("Couldn't create tmp profile: "+fname)
+      exit(1)
+   return fname
 
-def run_firefox():
-   pass
+def get_bak_file_list(backupdir, name):
+   match = name + r'.bak_[0-9]*$'
+   rx = re.compile(match)
+   files = os.listdir(backupdir)
+   files1 = filter(rx.search, files)
+   files2 = sorted(files1, key = bakname_to_num, reverse = True)
+   return files2
 
-def run_chrome():
-   pass
+def chain_move(backupdir, name):
+   files = get_bak_file_list(backupdir, name)
+   for f in files:
+      n = bakname_to_num(f)
+      n = n + 1
+      newf = make_bakname(name, n)
+      fullf = os.path.join(backupdir, f)
+      fullnewf = os.path.join(backupdir, newf)
+      os.rename(fullf,fullnewf)
 
-def chrome_based_makefiles(args):
-   cachedir = os.path.expanduser("~/.cache")
-   if not os.path.isdir(cachedir):
-      os.mkdir(cachedir)
-   configdir = os.path.expanduser("~/.config")
+def make_bakname(name, num):
+   return(name + ".bak_" + str(num))
+
+def bakname_to_num(name):
+   num = name.split('_')[-1]
+   return int(num)
+
+def brave_based_makefiles(args):
+   configdir = os.path.expanduser("~/.config/BraveSoftware")
    if not os.path.isdir(configdir):
       os.mkdir(configdir)
-   localdir = os.path.expanduser("~/.local")
-   if not os.path.isdir(localdir):
-      os.mkdir(localdir)
+   return configdir
+
+def chrome_based_makefiles(args):
+   configdir = os.path.expanduser("~/.config/google-chrome")
+   if not os.path.isdir(configdir):
+      os.mkdir(configdir)
+   return configdir
+
+def chromium_based_makefiles(args):
+   configdir = os.path.expanduser("~/.config/Chromium")
+   if not os.path.isdir(configdir):
+      os.mkdir(configdir)
+   return configdir
 
 def firefox_makefiles(args):
    mozdir = os.path.expanduser("~/.mozilla")
@@ -80,16 +217,18 @@ def firefox_makefiles(args):
          pass
    if not os.path.isdir(nsdir):
       os.mkdir(nsdir)
+   return nsdir,inipath
 
 def arguments():
    p = argparse.ArgumentParser()
-   p.add_argument('-n',help='new profile', action='store_true')
+   p.add_argument('-r',help='new profile', action='store_true')
    p.add_argument('browser',help='type of browser. firefox, brave, chrome, chromium')
    p.add_argument('basedir',help='directory of source profiles')
    p.add_argument('name',help='name of profile')
    p.add_argument('profile_dir',help='profile subdirectory')
    p.add_argument('default_dir',nargs='?', help='default profile')
    args = p.parse_args()
+   return args
 
 main()
 #mkdir /tmp/tmpdir
