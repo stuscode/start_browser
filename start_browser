@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+#Licensed with GPL V3.0
 #usage: start_browser [-r] browser basedir name [default_dir]
 #    basedir should not be ~/.mozilla/firefox.  if possible it should be
 #        on an ssd.
