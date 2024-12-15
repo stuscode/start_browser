@@ -94,7 +94,7 @@ def main():
       execfile = '/opt/google/chrome/google-chrome'
    elif args.browser == 'chromium':
       dstconfigdir = chromium_based_makefiles(args)
-      execfile = 'chromium-browser'
+      execfile = '/opt/google/chromium/chrome-linux/chrome'
    else:
       print("Must specify a valid browser type")
       exit(1)
