@@ -1,4 +1,4 @@
-Start a browser instance in in its own namespace.  Requires nsmnt (github:stuscode/nsmnt).
+Start a browser instance in its own namespace.  Requires nsmnt (github:stuscode/nsmnt).
 
 
 quick start:
