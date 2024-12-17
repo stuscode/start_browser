@@ -17,15 +17,15 @@ If there is an existing profile, create a profile directory in the basedir.
 Move the profile directory into this new profile directory as a subdir.
 in the new profile directory create a profile.ini file that looks like:
 
-[Profile0]
-Name=google
-IsRelative=1
-Path=ztl4gzoq.google-18576
-Default=1
-
-[General]
-StartWithLastProfile=1
-Version=2
+[Profile0]<br>
+Name=google<br>
+IsRelative=1<br>
+Path=ztl4gzoq.google-18576<br>
+Default=1<br>
+<br>
+[General]<br>
+StartWithLastProfile=1<br>
+Version=2<br>
 
 
 Path should be the name of the profile subdir.  The Name should be whatever you
