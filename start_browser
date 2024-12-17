@@ -84,17 +84,17 @@ def main():
 #set up destination directory for mounts
    if args.browser == 'firefox':
       dstconfigdir = firefox_makefiles(args)
-      execfile = 'firefox'
+      execargs = ['firefox', '--new-instance']
        #create a profiles.ini for this browser instance
    elif args.browser == 'brave':
       dstconfigdir = brave_based_makefiles(args)
-      execfile = 'brave-browser'
+      execargs = ['brave-browser']
    elif args.browser == 'chrome':
       dstconfigdir = chrome_based_makefiles(args)
-      execfile = '/opt/google/chrome/google-chrome'
+      execargs = ['/opt/google/chrome/google-chrome']
    elif args.browser == 'chromium':
       dstconfigdir = chromium_based_makefiles(args)
-      execfile = '/opt/google/chromium/chrome-linux/chrome'
+      execargs = ['/opt/google/chromium/chrome-linux/chrome']
    else:
       print("Must specify a valid browser type")
       exit(1)
@@ -105,16 +105,9 @@ def main():
    nsmnt_args.append('-m')
    confdirarg = srcfinal_profile_dir + '=' + dstconfigdir
    nsmnt_args.append(confdirarg)
-   #command = "/bin/bash -c " + args.browser + "; echo done"
-   #command = args.browser + "; kill 1"
-   nsmnt_args.append("/bin/bash")
-   nsmnt_args.append("-c")
-   nsmnt_args.append(execfile)
-   #nsmnt_args.append(args.browser)
-   #nsmnt_args.append("&")
-   #nsmnt_args.append('bash')
+   nsmnt_allargs = nsmnt_args + execargs
    #print("exec: ",nsmnt_args)
-   os.execvp(nsmnt_args[0],nsmnt_args)
+   os.execvp(nsmnt_allargs[0],nsmnt_allargs)
 
 #create a different process to copy dirtree in the background
 def fork_copy_path(default, staged):
