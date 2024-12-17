@@ -12,3 +12,21 @@ config_name is the name of the configuration directory for this launch
 Default is a special configuration name.  It can be used, but it can also be used as the source configuration to be copied from in case there is no configuration config_name yet.
 
 
+firefox:
+If there is an existing profile, create a profile directory in the basedir.
+Move the profile directory into this new profile directory as a subdir.
+in the new profile directory create a profile.ini file that looks like:
+
+[Profile0]
+Name=google
+IsRelative=1
+Path=ztl4gzoq.google-18576
+Default=1
+
+[General]
+StartWithLastProfile=1
+Version=2
+
+
+Path should be the name of the profile subdir.  The Name should be whatever you
+want to call this profile.
