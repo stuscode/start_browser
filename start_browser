@@ -41,6 +41,7 @@ import os
 import re
 import shutil
 import sys
+import time
 
 def main():
    args = arguments()
@@ -56,22 +57,25 @@ def main():
    else:
       defaultpath = os.path.join(args.basedir,"default")
    if args.r:
+          #move existing dir to backup
       backupdir = os.path.join(args.basedir, "backup")
       if not os.path.isdir(backupdir):
          os.mkdir(backupdir)
       chain_move(backupdir, args.name) #renumber backups to prepare for new
       newbak = make_bakname(args.name, 1)  #name of new backup dir
       srcfullnewbak = os.path.join(backupdir, newbak)
-      shutil.move(srcprofile_dir, srcfullnewbak)   #move to backup location
-              #if staged exists, use it, and spawn child to make new staged
-      srcstagedname = srcprofile_dir + "_staged_"
+      if os.path.isdir(srcprofile_dir):
+         shutil.move(srcprofile_dir, srcfullnewbak)   #move to backup location
+          #create new profile dir
+          #if staged exists, use it, and spawn child to make new staged
+      srcstagedname = srcprofile_dir + "_staged"
       if os.path.isdir(srcstagedname):
          shutil.move(srcstagedname, srcprofile_dir)
       #end of -r processing
       #profile dir will be ready if there was a staged
-      #make a new staged directory
+      #make a new staged directory.  checks in sub for existance of default.
       fork_copy_path(defaultpath, srcstagedname)
-#set up directory that will be the profile
+#make sure there is a directory that will be the profile
    if not os.path.isdir(srcprofile_dir):
       if os.path.isdir(defaultpath):
          shutil.copytree(defaultpath, srcprofile_dir)
@@ -120,6 +124,7 @@ def fork_copy_path(default, staged):
       elif newpid > 0:
          return
       shutil.copytree(default, staged)
+      exit(0)
 
 def create_tmp_profile_file(name,dstconfigdir):
    file = "profile.ini_" + str(os.getpid())
