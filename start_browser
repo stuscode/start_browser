@@ -107,7 +107,7 @@ def main():
    nsmnt_args = ['nsmnt']
    #nsmnt_args.append('-d')
    nsmnt_args.append('-m')
-   confdirarg = srcfinal_profile_dir + '=' + dstconfigdir
+   confdirarg = srcfinal_profile_dir + '|' + dstconfigdir + '|' + 'bind,recursive'
    nsmnt_args.append(confdirarg)
    nsmnt_allargs = nsmnt_args + execargs
    #print("exec: ",nsmnt_args)
