@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 #Licensed with GPL V3.0
-#usage: start_browser [-r] browser basedir name [default_dir]
+#usage: start_browser [-n] ovpn_config [-r] browser basedir name [default_dir]
 #    basedir should not be ~/.mozilla/firefox.  if possible it should be
 #        on an ssd.
 #  -r means new profile; will move profile to .old.n for some nunmber 
 #        will also make a _staged from the default_dir
 #        and will use the staged if it exists
+#  -n set up a network namespace with openvpn as the route out
 #   NEW
 #   profile directory for firefox _is_ ~/.mozilla/firefox
 #      which means that it can be empty or not, don't manage the .ini file.
@@ -153,10 +154,13 @@ def chain_move(backupdir, name):
    for f in files:
       n = bakname_to_num(f)
       n = n + 1
-      newf = make_bakname(name, n)
-      fullf = os.path.join(backupdir, f)
-      fullnewf = os.path.join(backupdir, newf)
-      os.rename(fullf,fullnewf)
+      if n < 5:  #only keep 4 around
+         newf = make_bakname(name, n)
+         fullf = os.path.join(backupdir, f)
+         fullnewf = os.path.join(backupdir, newf)
+         os.rename(fullf,fullnewf)
+      else:
+         shutil.rmtree(fullf)
 
 def make_bakname(name, num):
    return(name + ".bak_" + str(num))
