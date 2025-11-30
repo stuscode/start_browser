@@ -79,7 +79,7 @@ def main():
 #make sure there is a directory that will be the profile
    if not os.path.isdir(srcprofile_dir):
       if os.path.isdir(defaultpath):
-         shutil.copytree(defaultpath, srcprofile_dir)
+         shutil.copytree(defaultpath, srcprofile_dir, symlinks=True)
       else:
          os.mkdir(srcprofile_dir)
 
@@ -154,9 +154,9 @@ def chain_move(backupdir, name):
    for f in files:
       n = bakname_to_num(f)
       n = n + 1
+      fullf = os.path.join(backupdir, f)
       if n < 5:  #only keep 4 around
          newf = make_bakname(name, n)
-         fullf = os.path.join(backupdir, f)
          fullnewf = os.path.join(backupdir, newf)
          os.rename(fullf,fullnewf)
       else:
